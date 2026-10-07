@@ -16,6 +16,9 @@ window.SHOP = {
   //   price: only type one if you are sure it is right. Empty = no price shown.
   products: [
     { link: "https://k.kili.co/245a9" },
+    { link: "https://k.kili.co/245ar" },
+    { link: "https://k.kili.co/245ok" },
+    { link: "https://k.kili.co/245os" },
     // { link: "https://k.kili.co/xxxxx", category: "Fashion", tag: "Popular" },
   ]
 };
