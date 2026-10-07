@@ -19,6 +19,14 @@ window.SHOP = {
     { link: "https://k.kili.co/245ar" },
     { link: "https://k.kili.co/245ok" },
     { link: "https://k.kili.co/245os" },
+    { link: "https://k.kili.co/245fc" },
+    { link: "https://k.kili.co/245ar" },
+      { link: "https://k.kili.co/245a9" },
+       { link: "
+       { link: "
+       { link: "
+       { link: "
+       { link: "
     // { link: "https://k.kili.co/xxxxx", category: "Fashion", tag: "Popular" },
   ]
 };
