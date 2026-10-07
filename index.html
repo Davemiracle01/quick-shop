@@ -59,7 +59,7 @@ input[type=search]:focus{outline:none;border-color:var(--accent)}
   <div class="brand" id="name"></div>
   <div class="by" id="by"></div>
   <p class="tag" id="tagline"></p>
-  <div><span class="k"> best Kilimall deals</span></div>
+  <div><span class="k">Shop Kilimall deals</span></div>
   <span class="welcome" id="welcome"></span>
 </header>
 <main class="wrap">
@@ -75,15 +75,15 @@ input[type=search]:focus{outline:none;border-color:var(--accent)}
 <script src="config.js"></script>
 <script>
 const S = window.SHOP || {};
-const P = (S.products || []).filter(p => p.title && p.link);
+const P = (S.products || []).filter(p => p.link).map(p => ({ ...p, d: {} }));
 const $ = id => document.getElementById(id);
 let cat = "All", term = "";
 
 if (S.accent) document.documentElement.style.setProperty('--accent', S.accent);
 if (S.accent2) document.documentElement.style.setProperty('--accent2', S.accent2);
-$('by').textContent = S.owner ? 'Curated by ' + S.owner : '';
 document.title = S.name || "Shop";
 $('name').textContent = S.name || "Shop";
+$('by').textContent = S.owner ? 'Curated by ' + S.owner : '';
 $('tagline').textContent = S.tagline || "";
 $('welcome').textContent = S.welcome || "";
 if (!S.welcome) $('welcome').hidden = true;
@@ -106,20 +106,51 @@ cats.forEach(c => {
 $('q').oninput = e => { term = e.target.value.toLowerCase().trim(); render(); };
 
 function esc(s){ return String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+const view = p => ({
+  title: p.title || p.d.title || "Product on Kilimall",
+  image: p.image || p.d.image || "",
+  price: p.price || p.d.price || ""
+});
+
+// image fails: try our proxy once, then fall back to the placeholder
+function imgFail(el) {
+  const src = el.getAttribute('src') || '';
+  if (/^https:/.test(src) && !el.dataset.tried) {
+    el.dataset.tried = 1;
+    el.src = '/api/img?u=' + encodeURIComponent(src);
+  } else el.remove();
+}
 
 function render() {
-  const list = P.filter(p => (cat === "All" || p.category === cat) && (!term || p.title.toLowerCase().includes(term)));
-  $('grid').innerHTML = list.length ? list.map(p => `
+  const list = P.map(p => ({ p, v: view(p) }))
+    .filter(({ p, v }) => (cat === "All" || p.category === cat) && (!term || v.title.toLowerCase().includes(term)));
+  $('grid').innerHTML = list.length ? list.map(({ p, v }) => `
     <a class="card" href="${esc(p.link)}" target="_blank" rel="noopener sponsored">
-      <div class="pic">🛍️${p.image ? `<img src="${esc(p.image)}" alt="${esc(p.title)}" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">` : ""}${p.tag ? `<span class="badge">${esc(p.tag)}</span>` : ""}</div>
+      <div class="pic">🛍️${v.image ? `<img src="${esc(v.image)}" alt="${esc(v.title)}" loading="lazy" referrerpolicy="no-referrer" onerror="imgFail(this)">` : ""}${p.tag ? `<span class="badge">${esc(p.tag)}</span>` : ""}</div>
       <div class="info">
-        <div class="title">${esc(p.title)}</div>
-        ${p.price ? `<div class="price">${esc(p.price)}</div>` : ""}
+        <div class="title">${esc(v.title)}</div>
+        ${v.price ? `<div class="price">${esc(v.price)}</div>` : ""}
         <div class="buy">View on Kilimall</div>
       </div>
     </a>`).join("") : `<div class="empty" style="grid-column:1/-1">Nothing found. Try another word or category.</div>`;
 }
+
+async function load(p) {
+  const key = "qs:" + p.link;
+  try {
+    const c = sessionStorage.getItem(key);
+    if (c) { p.d = JSON.parse(c); return; }
+  } catch (e) {}
+  try {
+    const r = await fetch('/api/preview?url=' + encodeURIComponent(p.link));
+    if (!r.ok) return;
+    p.d = await r.json();
+    try { sessionStorage.setItem(key, JSON.stringify(p.d)); } catch (e) {}
+  } catch (e) {}
+}
+
 render();
+Promise.all(P.filter(p => !(p.title && p.image && p.price)).map(load)).then(render);
 </script>
 </body>
 </html>
